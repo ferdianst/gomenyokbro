@@ -1,103 +1,117 @@
-const html404 = `<!DOCTYPE html>
+<!doctype html>
+<html>
+<head>
+  <meta http-equiv="content-type" content="txt/html; charset=utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.4.1/dist/css/bootstrap.min.css" integrity="sha256-L/W5Wfqfa0sdBNIKN9cG6QA5F2qx4qICmU2VgLruv9Y=" crossorigin="anonymous">
+  <title>Shorter URL Demo(CloudFlare Worker)</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      cursor: default;
+    }
+    html, body {
+      height: 100%;
+    }
+    body {
+      display: -webkit-box;
+      display: flex;
+      -webkit-box-align: center;
+      align-items: center;
+      -webkit-box-pack: center;
+      justify-content: center;
+      vertical-align: center;
+      flex-wrap: wrap;
+      align-content: center;
+
+      color: #2a2b2c;
+      background-color: #ebedee;
+      overflow: hidden;
+    }
+    .card {
+      background-color: transparent;
+      width: 768px;
+    }
+    .card-text {
+      text-align: center;
+    }
+    .card-text > a {
+      text-decoration: none;
+      color: #007bff;
+    }
+    .card-text > a {
+      cursor: pointer;
+    }
+    .form-control {
+        cursor: auto;
+    }
+    @media (max-width: 769px) {
+      .card {
+        width: 80%;
+      }
+    }
+    @media (max-width: 420px) {
+      .card {
+        width: 95%;
+      }
+    }
+    @media (prefers-color-scheme: dark) { 
+      body {
+        color: #d9d9d9; 
+        background: #1b1b1b;
+      }
+      .card {
+        background-color: #252d38;
+      }
+    } 
+  </style>  
+</head>
 <body>
-  <h1>404 Not Found.</h1>
-  <p>The url you visit is not found.</p>
-</body>`
-
-const statichtml = "https://xiaohan17.oss-cn-hangzhou.aliyuncs.com/xiaohan-Shorten-URL.html"
-
-
-async function randomString (len) {
-    len = len || 6
-    let $chars = 'ABCDEFGHJKMNPQRSTWXYZabcdefhijkmnprstwxyz23456789'    /****默认去掉了容易混淆的字符oOLl,9gq,Vv,Uu,I1****/
-    let maxPos = $chars.length
-    let result = ''
-    for (i = 0; i < len; i++) {
-        result += $chars.charAt(Math.floor(Math.random() * maxPos))
-    }
-    return result
-}
-async function checkURL (URL) {
-    let str = URL
-    let Expression = /http(s)?:\/\/([\w-]+\.)+[\w-]+(\/[\w- .\/?%&=]*)?/
-    let objExp = new RegExp(Expression)
-    return objExp.test(str) && str[0] === 'h'
-}
-async function save_url (URL, shortStr) {
-    console.log("shortStr:", shortStr)
-    let random_key
-    if (!shortStr) {
-        random_key = await randomString()
-    } else {
-        random_key = shortStr
-    }
-    let is_exist = await LINKS.get(random_key)
-    console.log(is_exist)
-    if (is_exist == null) {
-        // 正常，直接放入
-        let stat = await LINKS.put(random_key, URL)
-        if (typeof (stat) === "undefined") return random_key
-        else return stat
-    } else if (!shortStr) {
-        // 生成的random_key重复了，递归调用
-        return save_url(URL, null)
-    } else
-        // 自定义的路径已经存在了
-        return -1
-
-}
-async function handleRequest (request) {
-    console.log(request)
-    if (request.method === "POST") {
-        let req = await request.json()
-        console.log(req["url"])
-        if (!await checkURL(req["url"]))
-            return new Response(`{"msg":"Wrong URL"}`, { status: 400, headers: { "Content-Type": "application/json" } })
-        let random_key = await save_url(req["url"], req["shortStr"])
-        console.log(random_key)
-        // 放成功了
-        if (Object.prototype.toString.call(random_key) === "[object String]")
-            return new Response(`{"data":{"shortUrl":"${random_key}"}}`, { status: 200, headers: { "Content-Type": "application/json" } })
-        // 自定义的路径重复了
-        else if (random_key === -1)
-            return new Response(`{"msg":"Customized URL used"}`, { status: 400, headers: { "Content-Type": "application/json" } })
-        // 没测试k-v满了之后会怎么样，如果有错的话put时应该会有返回（猜测（懒
-        else return new Response(`{"msg":"k-v daily quota is reached. Please come back next day!"}`, { status: 500, headers: { "Content-Type": "application/json" } })
-    }
-    const requestURL = new URL(request.url)
-    // todo 规范路径的'/'
-    const path = requestURL.pathname.toString().substring(1);
-    console.log(path)
-    if (!path) {
-
-        const html = await fetch(statichtml)
-
-        return new Response(await html.text(), {
-            headers: {
-                "content-type": "text/html;charset=UTF-8",
-            },
-        })
-    }
-    const value = await LINKS.get(path)
-    console.log(value)
-
-
-    const location = value
-    if (location) {
-        return Response.redirect(location, 302)
-
-    }
-    // If request not in kv, return 404
-    return new Response(html404, {
-        headers: {
-            "content-type": "text/html;charset=UTF-8",
-        },
-        status: 404
-    })
-}
-
-
-
-addEventListener("fetch", async event => {
-    event.respondWith(handleRequest(event.request))
-})
+  <div class="card">
+    <h5 class="card-header"Shorten your cool URLs!</h5>
+    <div class="card-body">
+      <h5 class="card-title">Please enter a URL to be shortened to a cool one :</h5>
+      <div class="input-group mb-3">
+        <input type="text" class="form-control" placeholder="Example: https://blog.51sec.org/" id="text">
+        <div class="input-group-append">
+          <button class="btn btn-primary" type="button" onclick='shorturl()' id="searchbtn">Shorten it</button>
+        </div>
+      </div>    
+      <div class="card-text">
+        <a href="#" target="_self">Fork me on GitHub</a>
+        <p> Copyright ©2018-2050 <a href="#" target="_blank">51Sec</a>. </p>
+        <p id="notice"><a href="#"><img src="https://photos.51sec.org/file/test1-51sec/2021/09/216x194.png" alt="51Sec Blog Site" style="display: block; margin-left: auto; margin-right: auto;" width="108" height="97" /> </a> </p>
+      </div>
+      <p id="notice"></p>             
+    </div>
+  </div>
+  <div class="modal fade" id="exampleModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="exampleModalLabel">Result</h5>
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+          </button>
+        </div>
+        <div class="modal-body" id="result">No result</div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-primary" onclick='copyurl("result")' data-toggle="popover" data-placement="bottom" data-content="Copied!">Copy</button>
+          <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>    
+        </div>
+      </div>
+    </div>
+  </div>         
+  <script src="https://cdn.jsdelivr.net/npm/jquery@3.4.1/dist/jquery.slim.min.js" integrity="sha256-pasqAKBDmFT4eHoN2ndd6lN370kFiGUFyTiUHWhU7k8=" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js" integrity="sha384-Q6E9RHvbIyZFJoft+2mJbHaEWldlvI9IOYy5n3zV9zzTtmI3UksdQRVvoxMfooAo" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.4.1/dist/js/bootstrap.min.js" integrity="sha256-WqU1JavFxSAMcLP2WIOI+GB2zWmShMI82mTpLDcqFUg=" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/gh/51sec/Url-Shorten-By-CF-Worker@main/main.js" crossorigin="anonymous"></script>
+  
+  
+  
+ <div class="separator" style="clear: both; text-align: center;">
+</div>
+  
+</body>
+</html>
